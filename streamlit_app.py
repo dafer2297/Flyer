@@ -1,146 +1,151 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import io
+import textwrap
 
-# Configuración inicial
-st.set_page_config(page_title="Flyers Prefectura", layout="centered")
+st.set_page_config(page_title="Generador Flyer Canaro", layout="centered")
 
-# Gestión de memoria para navegar entre pasos
-if 'paso' not in st.session_state:
-    st.session_state.paso = 1
+# --- FUNCIÓN PARA TEXTO CON SOMBRA (Para que se lea bien) ---
+def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
+    x, y = xy
+    # Dibuja sombra (desplazada 3 pixeles)
+    draw.text((x+3, y+3), texto, font=fuente, fill=sombra)
+    # Dibuja texto real
+    draw.text((x, y), texto, font=fuente, fill=color)
 
-st.title("🎨 Generador de Flyers Oficiales")
+if 'paso' not in st.session_state: st.session_state.paso = 1
 
-# ==========================================
-# PASO 1: INGRESO DE DATOS
-# ==========================================
+st.title("🎨 Generador de Flyers (Estilo Canaro)")
+
+# ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
-    st.header("1. Datos del Evento")
-    
-    st.info("📝 Llena la información que aparecerá en el flyer.")
-    
-    # Campos de texto
-    st.session_state.descripcion = st.text_area("Descripción del Evento:", "Disfruta de la gran feria agroecológica...")
-    st.session_state.lugar = st.text_input("Lugar:", "Parque Calderón, Cuenca")
+    st.header("1. Ingresa los datos")
+    st.info("💡 Tip: Sube una foto vertical para que el diseño cuadre perfecto.")
+
+    st.session_state.titulo = st.text_area("TÍTULO DEL EVENTO (Ej: TE INVITA):", "TE INVITA")
+    st.session_state.cuerpo = st.text_area("Descripción Principal:", "Al evento de entrega de la membresía a la Red Mundial de Destinos Turísticos del Cacao.")
     
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.fecha = st.text_input("Fecha:", "12 Feb")
+        st.session_state.fecha = st.text_input("Fecha:", "Miércoles, 6 de Agosto")
+        st.session_state.hora = st.text_input("Hora:", "18:30")
     with col2:
-        st.session_state.hora = st.text_input("Hora:", "10:00 AM")
+        st.session_state.lugar_nombre = st.text_input("Lugar (Nombre):", "Teatrina de la Casa de la Provincia")
+        st.session_state.lugar_dir = st.text_input("Dirección:", "(Tomás Ordóñez 8-69 y Simón Bolívar)")
         
-    st.session_state.foto = st.file_uploader("Sube la FOTO de fondo:", type=["jpg", "png", "jpeg"])
+    st.session_state.foto = st.file_uploader("Sube tu FOTO VERTICAL:", type=["jpg", "png", "jpeg"])
 
-    # Botón para continuar
-    if st.button("Siguiente: Diseñar Flyer ➡️", type="primary"):
+    if st.button("Generar Diseño ➡️", type="primary"):
         if st.session_state.foto:
             st.session_state.paso = 2
             st.rerun()
         else:
-            st.error("⚠️ Por favor sube una imagen de fondo para continuar.")
+            st.error("⚠️ Falta subir la foto.")
 
-# ==========================================
-# PASO 2: DISEÑO Y VISUALIZACIÓN
-# ==========================================
+# ==================== PASO 2: DISEÑO ====================
 elif st.session_state.paso == 2:
-    st.header("2. Personalización")
+    st.header("2. Resultado Final")
     
-    # Barra lateral para colores
-    st.sidebar.header("🎨 Colores")
-    color_caja_fondo = st.sidebar.color_picker("Fondo de Datos (Abajo)", "#006847") # Verde Prefectura
-    color_cajas_fecha = st.sidebar.color_picker("Cajas de Fecha/Hora", "#ffffff")
-    color_texto_fecha = st.sidebar.color_picker("Texto Fecha/Hora", "#000000")
+    # Colores personalizables
+    color_tarjeta = st.sidebar.color_picker("Color Tarjeta Info", "#2E7D32") # Verde oscuro
     
-    # --- PROCESAMIENTO DE IMAGEN ---
-    # 1. Cargar imagen base
+    # 1. CARGAR IMAGEN
     img = Image.open(st.session_state.foto).convert("RGBA")
     ancho, alto = img.size
     capa = Image.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(capa)
     
-    # Intentar cargar fuente grande (si subiste fuente.ttf)
+    # 2. CARGAR FUENTES CANARO (Ajuste automático de tamaño)
     try:
-        font_titulo = ImageFont.truetype("fuente.ttf", int(alto * 0.05)) # 5% del alto de la foto
-        font_texto = ImageFont.truetype("fuente.ttf", int(alto * 0.03))
-        font_peque = ImageFont.truetype("fuente.ttf", int(alto * 0.025))
+        # ExtraBold para títulos grandes
+        f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", int(alto * 0.08)) 
+        f_invita = ImageFont.truetype("Canaro-ExtraBold.ttf", int(alto * 0.05))
+        # Medium para textos de lectura
+        f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", int(alto * 0.03))
+        f_info = ImageFont.truetype("Canaro-Medium.ttf", int(alto * 0.025))
+        f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", int(alto * 0.02))
     except:
-        # Si no hay fuente, usa la por defecto (es pequeña, mejor subir .ttf)
-        font_titulo = ImageFont.load_default()
-        font_texto = ImageFont.load_default()
-        font_peque = ImageFont.load_default()
+        st.error("⚠️ ERROR DE FUENTES: Asegúrate de que 'Canaro-ExtraBold.ttf' y 'Canaro-Medium.ttf' estén en GitHub.")
+        f_titulo = f_invita = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # 2. LOGOS (Parte Superior)
+    # 3. LOGOS (Parte Superior)
     try:
-        # Logo Prefectura (Izquierda)
+        # Ajustamos logos al 12% del alto de la imagen
+        h_logo = int(alto * 0.12)
+        
+        # Prefectura (Centro-Arriba o Izquierda según prefieras, la referencia lo tiene arriba)
+        # Vamos a ponerlos como en la referencia: Prefectura Arriba Centro
         logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
-        ratio_pref = logo_pref.width / logo_pref.height
-        nuevo_alto_logo = int(alto * 0.12) # 12% del alto de la foto
-        logo_pref = logo_pref.resize((int(nuevo_alto_logo * ratio_pref), nuevo_alto_logo))
-        img.paste(logo_pref, (int(ancho*0.05), int(alto*0.03)), logo_pref)
+        ratio = logo_pref.width / logo_pref.height
+        logo_pref = logo_pref.resize((int(h_logo * ratio), h_logo))
+        x_logo_p = (ancho - logo_pref.width) // 2
+        img.paste(logo_pref, (x_logo_p, int(alto*0.02)), logo_pref)
+    except: pass
 
-        # Logo Visit Azuay (Derecha)
+    # 4. TEXTOS PRINCIPALES (TE INVITA + DESCRIPCIÓN)
+    y_texto = alto * 0.18 # Empezamos debajo del logo
+    
+    # Título "TE INVITA"
+    bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
+    w_tit = bbox[2] - bbox[0]
+    dibujar_texto_sombra(draw, ((ancho-w_tit)/2, y_texto), st.session_state.titulo, f_titulo)
+    
+    y_texto += alto * 0.10 # Espacio
+    
+    # Descripción (Centrada y con saltos de línea automáticos)
+    margen_lat = int(ancho * 0.1)
+    lineas = textwrap.wrap(st.session_state.cuerpo, width=30) # Ajusta el ancho del texto
+    for linea in lineas:
+        bbox_l = draw.textbbox((0,0), linea, font=f_cuerpo)
+        w_l = bbox_l[2] - bbox_l[0]
+        dibujar_texto_sombra(draw, ((ancho-w_l)/2, y_texto), linea, f_cuerpo)
+        y_texto += alto * 0.04
+
+    # 5. TARJETA FLOTANTE DE INFORMACIÓN (Esquina Inferior Derecha)
+    # Dimensiones de la tarjeta verde
+    w_card = ancho * 0.55
+    h_card = alto * 0.25
+    x_card = ancho * 0.40 # Pegado a la derecha
+    y_card = alto * 0.65  # Altura media-baja
+    
+    # Dibujar rectángulo redondeado verde (Tarjeta)
+    rgb = tuple(int(color_tarjeta.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    draw.rounded_rectangle([x_card, y_card, ancho - (ancho*0.05), y_card + h_card], radius=30, fill=rgb + (230,)) # 230 es opacidad
+    
+    # Contenido de la tarjeta (Iconos simulados con texto o emojis)
+    margin_card_x = x_card + (ancho*0.03)
+    margin_card_y = y_card + (alto*0.02)
+    
+    # Fila 1: Lugar
+    draw.text((margin_card_x, margin_card_y), "📍 " + st.session_state.lugar_nombre, font=f_info, fill="white")
+    draw.text((margin_card_x + 35, margin_card_y + (alto*0.03)), st.session_state.lugar_dir, font=f_info_peq, fill="white")
+    
+    # Fila 2: Fecha (Separada)
+    y_fecha = margin_card_y + (alto*0.08)
+    draw.text((margin_card_x, y_fecha), "🗓️ " + st.session_state.fecha, font=f_info, fill="white")
+    
+    # Fila 3: Hora (Separada)
+    y_hora = y_fecha + (alto*0.06)
+    draw.text((margin_card_x, y_hora), "🕒 " + st.session_state.hora, font=f_info, fill="white")
+
+    # 6. LOGO VISIT AZUAY (Esquina Inferior Izquierda, grande como referencia)
+    try:
         logo_visit = Image.open("logo_visit.png").convert("RGBA")
-        ratio_visit = logo_visit.width / logo_visit.height
-        logo_visit = logo_visit.resize((int(nuevo_alto_logo * ratio_visit), nuevo_alto_logo))
-        img.paste(logo_visit, (int(ancho*0.95 - logo_visit.width), int(alto*0.03)), logo_visit)
-    except:
-        st.warning("⚠️ Sube los logos 'logo_prefectura.png' y 'logo_visit.png' a GitHub para verlos aquí.")
+        h_visit = int(alto * 0.25) # Grande
+        r_visit = logo_visit.width / logo_visit.height
+        logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit))
+        # Lo pegamos abajo a la izquierda, saliendo un poco si es estilo burbuja
+        img.paste(logo_visit, (int(ancho*0.02), int(alto - h_visit - (alto*0.02))), logo_visit)
+    except: pass
 
-    # 3. TEXTO "INVITA" (Obligatorio)
-    texto_invita = "LA PREFECTURA DEL AZUAY INVITA"
-    # Calculamos posición centrada arriba (debajo de logos aprox)
-    bbox_invita = draw.textbbox((0, 0), texto_invita, font=font_texto)
-    ancho_txt = bbox_invita[2] - bbox_invita[0]
-    # Dibujar sombra negra y texto blanco
-    draw.text(((ancho - ancho_txt)/2 + 2, alto*0.18 + 2), texto_invita, font=font_texto, fill="black")
-    draw.text(((ancho - ancho_txt)/2, alto*0.18), texto_invita, font=font_texto, fill="white")
-
-    # 4. CAJA INFERIOR (Contenedor Principal)
-    # Convertir hex a RGB para transparencia
-    rgb_fondo = tuple(int(color_caja_fondo.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    # Dibuja un rectángulo en el 25% inferior de la imagen
-    draw.rectangle([0, alto*0.75, ancho, alto], fill=rgb_fondo + (230,)) # 230 es opacidad alta
-
-    # 5. DESCRIPCIÓN Y LUGAR (Dentro de la caja inferior)
-    draw.text((ancho*0.05, alto*0.77), st.session_state.descripcion, font=font_texto, fill="white")
-    draw.text((ancho*0.05, alto*0.83), f"📍 {st.session_state.lugar}", font=font_peque, fill="white")
-
-    # 6. CAJAS SEPARADAS PARA FECHA Y HORA (A la derecha de la caja inferior)
-    rgb_cajas = tuple(int(color_cajas_fecha.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    
-    # Caja FECHA
-    caja_fecha_x = ancho * 0.65
-    caja_fecha_y = alto * 0.80
-    ancho_caja = ancho * 0.15
-    alto_caja = alto * 0.08
-    draw.rectangle([caja_fecha_x, caja_fecha_y, caja_fecha_x + ancho_caja, caja_fecha_y + alto_caja], fill=rgb_cajas + (255,))
-    draw.text((caja_fecha_x + 10, caja_fecha_y + 10), st.session_state.fecha, font=font_peque, fill=color_texto_fecha)
-    
-    # Caja HORA (Al lado)
-    caja_hora_x = caja_fecha_x + ancho_caja + 20 # 20px de separación
-    draw.rectangle([caja_hora_x, caja_fecha_y, caja_hora_x + ancho_caja, caja_fecha_y + alto_caja], fill=rgb_cajas + (255,))
-    draw.text((caja_hora_x + 10, caja_fecha_y + 10), st.session_state.hora, font=font_peque, fill=color_texto_fecha)
-
-    # --- FINALIZAR IMAGEN ---
+    # --- RENDER FINAL ---
     img_final = Image.alpha_composite(img, capa).convert("RGB")
+    st.image(img_final, caption="Flyer Final", use_container_width=True)
     
-    # Mostrar en pantalla
-    st.image(img_final, caption="Vista Previa del Flyer", use_container_width=True)
-    
-    # Botones de acción
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("⬅️ Editar Datos"):
-            st.session_state.paso = 1
-            st.rerun()
-    with col_btn2:
-        # Convertir a bytes para descargar
+    c1, c2 = st.columns(2)
+    with c1: 
+        if st.button("⬅️ Editar", type="secondary"): st.session_state.paso = 1; st.rerun()
+    with c2:
         buf = io.BytesIO()
-        img_final.save(buf, format="JPEG", quality=95)
-        st.download_button(
-            label="📥 DESCARGAR FLYER LISTO",
-            data=buf.getvalue(),
-            file_name="flyer_prefectura.jpg",
-            mime="image/jpeg",
-            type="primary"
-        )
+        img_final.save(buf, format="JPEG", quality=100)
+        st.download_button("📥 DESCARGAR IMAGEN", data=buf.getvalue(), file_name="flyer_oficial.jpg", mime="image/jpeg", type="primary")
