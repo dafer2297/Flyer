@@ -3,17 +3,17 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
 import textwrap
 
-st.set_page_config(page_title="Flyer Prefectura Ajustes V4", layout="centered")
+st.set_page_config(page_title="Flyer Prefectura V5 Final", layout="centered")
 
 # --- FUNCIÓN PARA TEXTO CON SOMBRA ---
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
     x, y = xy
-    draw.text((x+6, y+6), texto, font=fuente, fill=sombra)
+    draw.text((x+5, y+5), texto, font=fuente, fill=sombra)
     draw.text((x, y), texto, font=fuente, fill=color)
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-st.title("🎨 Generador de Flyers (Ajustes de Posición)")
+st.title("🎨 Generador de Flyers (Ajustes de Precisión V5)")
 
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
@@ -64,47 +64,49 @@ elif st.session_state.paso == 2:
     capa = Image.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(capa)
     
-    # 2. FUENTES
+    # 2. FUENTES (TAMAÑOS REDUCIDOS)
     try:
-        f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 140)
-        f_invita = ImageFont.truetype("Canaro-ExtraBold.ttf", 90)
-        f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 55)
+        # AJUSTE: Título bajado de 140 a 110
+        f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 110)
+        # AJUSTE: Cuerpo bajado de 55 a 45
+        f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 45)
+        
         f_info = ImageFont.truetype("Canaro-Medium.ttf", 45)
         f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", 35)
     except:
         st.error("⚠️ Fuentes Canaro no encontradas.")
-        f_titulo = f_invita = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
+        f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # 3. LOGO PREFECTURA (MÁS GRANDE Y MÁS ARRIBA)
+    # 3. LOGO PREFECTURA (MÁS ARRIBA)
+    h_logo_p = 700 
     try:
-        # AJUSTE 1: Tamaño aumentado a 700
-        h_logo_p = 700 
         logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
         ratio = logo_pref.width / logo_pref.height
         logo_pref = logo_pref.resize((int(h_logo_p * ratio), h_logo_p))
         x_logo_p = (canvas_w - logo_pref.width) // 2
-        # AJUSTE 2: Posición Y en 10 (casi pegado al borde superior)
-        img.paste(logo_pref, (x_logo_p, 10), logo_pref)
+        # AJUSTE: Posición Y=5 (casi tocando el borde superior)
+        img.paste(logo_pref, (x_logo_p, 5), logo_pref)
     except: pass
 
-    # 4. TEXTOS (SUBIDOS PARA ESTAR CERCA DEL LOGO)
-    # AJUSTE 3: Posición inicial subida de 750 a 680
-    y_texto = 680 
+    # 4. TEXTOS (POSICIÓN AJUSTADA AL NUEVO TAMAÑO)
+    # El logo mide 700 y empieza en 5. Termina en 705.
+    # Empezamos el texto un poco más abajo para dar aire.
+    y_texto = 740 
     
     # Título
     bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
     w_tit = bbox[2] - bbox[0]
     dibujar_texto_sombra(draw, ((canvas_w - w_tit)/2, y_texto), st.session_state.titulo, f_titulo)
     
-    y_texto += 180
+    y_texto += 140 # Espacio reducido porque la letra es más pequeña
     
     # Descripción
-    lineas = textwrap.wrap(st.session_state.cuerpo, width=28) 
+    lineas = textwrap.wrap(st.session_state.cuerpo, width=35) # Ancho aumentado porque la letra es más pequeña
     for linea in lineas:
         bbox_l = draw.textbbox((0,0), linea, font=f_cuerpo)
         w_l = bbox_l[2] - bbox_l[0]
         dibujar_texto_sombra(draw, ((canvas_w - w_l)/2, y_texto), linea, f_cuerpo)
-        y_texto += 70
+        y_texto += 60
 
     # 5. TARJETA INFO (DERECHA)
     w_card = 650
@@ -122,21 +124,21 @@ elif st.session_state.paso == 2:
     draw.text((margin_x, margin_y + 160), "🗓️ " + st.session_state.fecha, font=f_info, fill="white")
     draw.text((margin_x, margin_y + 260), "🕒 " + st.session_state.hora, font=f_info, fill="white")
 
-    # 6. LOGO VISIT AZUAY (ESQUINA INFERIOR COMPLETA)
+    # 6. LOGO VISIT AZUAY (MÁS ABAJO)
+    h_visit = 700 
     try:
         logo_visit = Image.open("logo_visit.png").convert("RGBA")
-        h_visit = 700 
         r_visit = logo_visit.width / logo_visit.height
         logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit))
         
-        # AJUSTE 4: Posición Y sumando +30 pixeles para empujarlo más abajo
-        img.paste(logo_visit, (-30, canvas_h - h_visit + 30), logo_visit)
+        # AJUSTE: Empujado mucho más abajo (+100 pixeles)
+        img.paste(logo_visit, (-30, canvas_h - h_visit + 100), logo_visit)
     except: pass
 
     # --- FINALIZAR ---
     img_final = Image.alpha_composite(img, capa).convert("RGB")
     
-    st.image(img_final, caption="Flyer Final Ajustado", width=400)
+    st.image(img_final, caption="Flyer Final V5", width=400)
     
     c1, c2 = st.columns(2)
     with c1: 
@@ -144,4 +146,4 @@ elif st.session_state.paso == 2:
     with c2:
         buf = io.BytesIO()
         img_final.save(buf, format="JPEG", quality=100)
-        st.download_button("📥 DESCARGAR FLYER", data=buf.getvalue(), file_name="flyer_prefectura_v4.jpg", mime="image/jpeg", type="primary")
+        st.download_button("📥 DESCARGAR FLYER", data=buf.getvalue(), file_name="flyer_prefectura_v5.jpg", mime="image/jpeg", type="primary")
