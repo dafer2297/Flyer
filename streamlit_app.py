@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
 import textwrap
 
-st.set_page_config(page_title="Flyer 4K Tarjeta Ajustada", layout="centered")
+st.set_page_config(page_title="Flyer 4K V6 Final", layout="centered")
 
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
     x, y = xy
@@ -12,7 +12,7 @@ def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black")
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-st.title("💎 Generador 4K (Tarjeta Compacta)")
+st.title("💎 Generador 4K (Ajustes Finales V6)")
 
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
@@ -62,18 +62,20 @@ elif st.session_state.paso == 2:
     capa = Image.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(capa)
     
-    # 2. FUENTES 4K
+    # 2. FUENTES 4K (Ajustadas para que quepan en la tarjeta)
     try:
         f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 220)
         f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 90)
-        f_info = ImageFont.truetype("Canaro-Medium.ttf", 85) # Un poco más pequeña para encajar
-        f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", 65)
+        # Reducidas un poco para que no se salgan
+        f_info = ImageFont.truetype("Canaro-Medium.ttf", 75) 
+        f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", 55)
     except:
         st.error("⚠️ Fuentes no encontradas.")
         f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # 3. LOGO PREFECTURA (PEQUEÑO)
-    h_logo_p = 600 
+    # 3. LOGO PREFECTURA (UN POCO MÁS GRANDE)
+    # AJUSTE: Aumentado de 600 a 700
+    h_logo_p = 700 
     try:
         logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
         ratio = logo_pref.width / logo_pref.height
@@ -82,8 +84,9 @@ elif st.session_state.paso == 2:
         img.paste(logo_pref, (x_logo_p, 50), logo_pref)
     except: pass
 
-    # 4. TEXTOS
-    y_texto = 750 
+    # 4. TEXTOS (MÁS ABAJO)
+    # AJUSTE: Bajado de 750 a 880
+    y_texto = 880 
     
     bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
     w_tit = bbox[2] - bbox[0]
@@ -98,37 +101,36 @@ elif st.session_state.paso == 2:
         dibujar_texto_sombra(draw, ((canvas_w - w_l)/2, y_texto), linea, f_cuerpo)
         y_texto += 110
 
-    # 5. TARJETA INFO (AJUSTADA Y FLOTANTE)
-    # Reducimos tamaño
-    w_card = 1100  # Antes 1300
-    h_card = 850   # Antes 1000
+    # 5. TARJETA INFO (ARREGLADA: MÁS GRANDE Y LETRA MÁS PEQUEÑA)
+    # Aumentamos tamaño de la tarjeta
+    w_card = 1200  # Antes 1100
+    h_card = 950   # Antes 850
     y_card = canvas_h - h_card - 750
     
-    # Margen derecho de 100px para que "flote" dentro de la imagen
     margen_derecho = 80
     x_inicio_tarjeta = canvas_w - w_card - margen_derecho
     
     rgb_t = tuple(int(color_tarjeta.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
     
-    # Dibujamos el rectángulo
     draw.rounded_rectangle(
         [x_inicio_tarjeta, y_card, canvas_w - margen_derecho, y_card + h_card], 
         radius=60, 
         fill=rgb_t + (230,)
     )
     
-    # Texto dentro de la tarjeta
-    margin_x = x_inicio_tarjeta + 60
-    margin_y = y_card + 60
+    # Margen interno y espaciado ajustado
+    margin_x = x_inicio_tarjeta + 70
+    margin_y = y_card + 70
     
-    # Apretamos un poco el espaciado vertical
+    # Usamos las nuevas fuentes más pequeñas
     draw.text((margin_x, margin_y), "📍 " + st.session_state.lugar_nombre, font=f_info, fill="white")
-    draw.text((margin_x, margin_y + 110), st.session_state.lugar_dir, font=f_info_peq, fill="white")
+    draw.text((margin_x, margin_y + 100), st.session_state.lugar_dir, font=f_info_peq, fill="white")
     draw.text((margin_x, margin_y + 280), "🗓️ " + st.session_state.fecha, font=f_info, fill="white")
-    draw.text((margin_x, margin_y + 450), "🕒 " + st.session_state.hora, font=f_info, fill="white")
+    draw.text((margin_x, margin_y + 480), "🕒 " + st.session_state.hora, font=f_info, fill="white")
 
-    # 6. LOGO VISIT AZUAY
-    h_visit = 1000 
+    # 6. LOGO VISIT AZUAY (UN POCO MÁS GRANDE)
+    # AJUSTE: Aumentado de 1000 a 1150
+    h_visit = 1150 
     try:
         logo_visit = Image.open("logo_visit.png").convert("RGBA")
         r_visit = logo_visit.width / logo_visit.height
