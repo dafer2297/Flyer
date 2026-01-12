@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
 import textwrap
 
-st.set_page_config(page_title="Flyer 4K Final Equilibrado", layout="centered")
+st.set_page_config(page_title="Flyer 4K Logo Pequeño", layout="centered")
 
 # Función de sombra para 4K
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
@@ -13,7 +13,7 @@ def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black")
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-st.title("💎 Generador 4K (Diseño Equilibrado)")
+st.title("💎 Generador 4K (Logo Prefectura Ajustado)")
 
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
@@ -73,22 +73,22 @@ elif st.session_state.paso == 2:
         st.error("⚠️ Fuentes no encontradas.")
         f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # 3. LOGO PREFECTURA (TAMAÑO MEDIANO - ARRIBA)
-    # AJUSTE: Reducido de 1400 a 900 para que no sea invasivo
-    h_logo_p = 900 
+    # 3. LOGO PREFECTURA (TAMAÑO REDUCIDO)
+    # AJUSTE CRÍTICO: Reducido de 900 a 600 pixeles
+    h_logo_p = 600 
     try:
         logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
         ratio = logo_pref.width / logo_pref.height
         logo_pref = logo_pref.resize((int(h_logo_p * ratio), h_logo_p), Image.Resampling.LANCZOS)
         x_logo_p = (canvas_w - logo_pref.width) // 2
         
-        # AJUSTE: Posición Y=50 (Un margen elegante desde el borde superior)
+        # Posición Y=50 (Margen superior elegante)
         img.paste(logo_pref, (x_logo_p, 50), logo_pref)
     except: pass
 
-    # 4. TEXTOS (JUSTO DEBAJO DEL LOGO)
-    # AJUSTE: Posición calculada para estar debajo del nuevo tamaño de logo
-    y_texto = 1000 
+    # 4. TEXTOS (SUBIDOS PARA ACOMPAÑAR AL LOGO PEQUEÑO)
+    # AJUSTE CRÍTICO: Subido de 1000 a 750
+    y_texto = 750 
     
     # Título
     bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
@@ -121,15 +121,14 @@ elif st.session_state.paso == 2:
     draw.text((margin_x, margin_y + 320), "🗓️ " + st.session_state.fecha, font=f_info, fill="white")
     draw.text((margin_x, margin_y + 520), "🕒 " + st.session_state.hora, font=f_info, fill="white")
 
-    # 6. LOGO VISIT AZUAY (TAMAÑO MEDIANO - ESQUINA)
-    # AJUSTE: Reducido de 1400 a 1000. Grande pero no excesivo.
-    h_visit = 1000 
+    # 6. LOGO VISIT AZUAY (ESQUINA INFERIOR)
+    h_visit = 1000 # Tamaño grande en la esquina
     try:
         logo_visit = Image.open("logo_visit.png").convert("RGBA")
         r_visit = logo_visit.width / logo_visit.height
         logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit), Image.Resampling.LANCZOS)
         
-        # AJUSTE: Posición exacta en la esquina inferior izquierda (0, borde abajo)
+        # Posición exacta en la esquina inferior izquierda
         img.paste(logo_visit, (0, canvas_h - h_visit), logo_visit)
     except: pass
 
