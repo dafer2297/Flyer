@@ -3,21 +3,22 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
 import textwrap
 
-st.set_page_config(page_title="Flyer 4K Ajustado", layout="centered")
+st.set_page_config(page_title="Flyer 4K Final Equilibrado", layout="centered")
 
+# Función de sombra para 4K
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
     x, y = xy
-    draw.text((x+10, y+10), texto, font=fuente, fill=sombra)
+    draw.text((x+8, y+8), texto, font=fuente, fill=sombra)
     draw.text((x, y), texto, font=fuente, fill=color)
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-st.title("💎 Generador 4K (Posiciones Corregidas)")
+st.title("💎 Generador 4K (Diseño Equilibrado)")
 
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
     st.header("1. Ingresa los datos")
-    st.info("ℹ️ Generando en ULTRA HD (2160x3840).")
+    st.info("ℹ️ Generando en ULTRA HD (2160x3840) - Formato PNG.")
     
     st.session_state.titulo = st.text_area("TÍTULO PRINCIPAL:", "TE INVITA")
     st.session_state.cuerpo = st.text_area("Descripción:", "Al evento de entrega de la membresía a la Red Mundial de Destinos Turísticos del Cacao.")
@@ -32,7 +33,7 @@ if st.session_state.paso == 1:
         
     st.session_state.foto = st.file_uploader("Sube tu foto:", type=["jpg", "png", "jpeg"])
 
-    if st.button("Generar Diseño ➡️", type="primary"):
+    if st.button("Diseñar Flyer ➡️", type="primary"):
         if st.session_state.foto:
             st.session_state.paso = 2
             st.rerun()
@@ -62,7 +63,7 @@ elif st.session_state.paso == 2:
     capa = Image.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(capa)
     
-    # 2. FUENTES (Grandes para 4K)
+    # 2. FUENTES 4K
     try:
         f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 220)
         f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 90)
@@ -72,22 +73,22 @@ elif st.session_state.paso == 2:
         st.error("⚠️ Fuentes no encontradas.")
         f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # 3. LOGO PREFECTURA (SUBIDO A LA FUERZA)
-    h_logo_p = 1400 
+    # 3. LOGO PREFECTURA (TAMAÑO MEDIANO - ARRIBA)
+    # AJUSTE: Reducido de 1400 a 900 para que no sea invasivo
+    h_logo_p = 900 
     try:
         logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
         ratio = logo_pref.width / logo_pref.height
         logo_pref = logo_pref.resize((int(h_logo_p * ratio), h_logo_p), Image.Resampling.LANCZOS)
         x_logo_p = (canvas_w - logo_pref.width) // 2
         
-        # --- CAMBIO CRÍTICO: Coordenada Y negativa (-100) ---
-        # Esto fuerza al logo a subir, ignorando el espacio vacío que tenga la imagen
-        img.paste(logo_pref, (x_logo_p, -100), logo_pref)
+        # AJUSTE: Posición Y=50 (Un margen elegante desde el borde superior)
+        img.paste(logo_pref, (x_logo_p, 50), logo_pref)
     except: pass
 
-    # 4. TEXTOS (SUBIDOS MUCHO MÁS ARRIBA)
-    # --- CAMBIO CRÍTICO: Subido de 1480 a 1100 ---
-    y_texto = 1100 
+    # 4. TEXTOS (JUSTO DEBAJO DEL LOGO)
+    # AJUSTE: Posición calculada para estar debajo del nuevo tamaño de logo
+    y_texto = 1000 
     
     # Título
     bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
@@ -120,21 +121,22 @@ elif st.session_state.paso == 2:
     draw.text((margin_x, margin_y + 320), "🗓️ " + st.session_state.fecha, font=f_info, fill="white")
     draw.text((margin_x, margin_y + 520), "🕒 " + st.session_state.hora, font=f_info, fill="white")
 
-    # 6. LOGO VISIT AZUAY (ESQUINA INFERIOR)
-    h_visit = 1400 
+    # 6. LOGO VISIT AZUAY (TAMAÑO MEDIANO - ESQUINA)
+    # AJUSTE: Reducido de 1400 a 1000. Grande pero no excesivo.
+    h_visit = 1000 
     try:
         logo_visit = Image.open("logo_visit.png").convert("RGBA")
         r_visit = logo_visit.width / logo_visit.height
         logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit), Image.Resampling.LANCZOS)
         
-        # Ajuste para clavarlo en la esquina
-        img.paste(logo_visit, (-50, canvas_h - h_visit + 150), logo_visit)
+        # AJUSTE: Posición exacta en la esquina inferior izquierda (0, borde abajo)
+        img.paste(logo_visit, (0, canvas_h - h_visit), logo_visit)
     except: pass
 
-    # --- FINALIZAR (PNG) ---
+    # --- FINALIZAR (PNG 4K) ---
     img_final = Image.alpha_composite(img, capa).convert("RGB")
     
-    st.image(img_final, caption="Vista Previa", width=400)
+    st.image(img_final, caption="Vista Previa (Baja resolución)", width=400)
     
     c1, c2 = st.columns(2)
     with c1: 
@@ -142,4 +144,4 @@ elif st.session_state.paso == 2:
     with c2:
         buf = io.BytesIO()
         img_final.save(buf, format="PNG")
-        st.download_button("📥 DESCARGAR 4K (PNG)", data=buf.getvalue(), file_name="flyer_prefectura_final.png", mime="image/png", type="primary")
+        st.download_button("📥 DESCARGAR FLYER 4K (PNG)", data=buf.getvalue(), file_name="flyer_prefectura_4k.png", mime="image/png", type="primary")
