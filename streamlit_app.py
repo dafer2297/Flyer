@@ -5,20 +5,30 @@ import textwrap
 import base64
 import os
 
-# --- 1. CONFIGURACIÓN INICIAL ---
-st.set_page_config(page_title="Generador Prefectura", layout="centered")
+# --- 1. CONFIGURACIÓN INICIAL (OBLIGATORIO PRIMERO) ---
+st.set_page_config(page_title="Generador Oficial", layout="centered")
 
-# --- 2. ESTILOS CSS (Se cargan SIEMPRE, haya o no imagen) ---
-# Esto asegura que los textos sean blancos y botones magenta aunque falle la imagen
-st.markdown(
-    """
+# --- 2. FUNCIÓN DE CARGA SEGURA ---
+def cargar_imagen_local(nombre_archivo):
+    if os.path.exists(nombre_archivo):
+        return nombre_archivo
+    return None
+
+# --- 3. ESTILOS CSS (DISEÑO) ---
+# Definimos el estilo base PRIMERO para que nunca se vea negro
+estilo_base = """
     <style>
-    /* TEXTOS BLANCOS */
+    /* Color de fondo de seguridad (Azul Prefectura) por si falla la imagen */
+    .stApp {
+        background-color: #1E3A8A; 
+    }
+    
+    /* Textos Blancos */
     .stMarkdown, .stText, h1, h2, h3, h4, p, label {
         color: #FFFFFF !important;
     }
     
-    /* INPUTS (Cuadros de texto) */
+    /* Inputs (Cajas de texto) */
     .stTextInput>div>div>input {
         color: #000000;
         background-color: rgba(255, 255, 255, 0.95);
@@ -30,7 +40,7 @@ st.markdown(
         border-radius: 8px;
     }
     
-    /* BOTONES MAGENTA */
+    /* Botones Magenta */
     div.stButton > button {
         background-color: #D81B60;
         color: white;
@@ -38,29 +48,26 @@ st.markdown(
         font-weight: bold;
         border-radius: 8px;
         padding: 0.8rem 1.5rem;
-        width: 100%; 
+        width: 100%;
     }
     
-    /* ESPACIADO */
+    /* Espaciado para que no se tape nada */
     .block-container {
-        padding-top: 20px !important; 
-        padding-bottom: 250px !important; 
+        padding-top: 20px !important;
+        padding-bottom: 250px !important;
     }
     
-    /* OCULTAR MENÚ */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* FIRMA FLOTANTE */
+    /* Firma Jota (Posición fija abajo) */
     .firma-container {
         position: absolute;
         bottom: 20px;
         left: 20px;
-        width: 250px;
+        width: 250px; /* TAMAÑO GRANDE */
         z-index: 1;
         pointer-events: none;
     }
+    
+    /* Ajuste Móvil */
     @media (max-width: 640px) {
         .firma-container {
             width: 180px;
@@ -68,68 +75,65 @@ st.markdown(
             bottom: 10px;
         }
     }
+    
+    /* Ocultar menú Streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
-    """,
-    unsafe_allow_html=True
-)
+"""
+st.markdown(estilo_base, unsafe_allow_html=True)
 
-# --- 3. CARGA DE IMÁGENES (Con protección anti-pantalla negra) ---
+# --- 4. CARGA DE IMÁGENES DE FONDO ---
 
 # A. FONDO AZUL
-if os.path.exists("fondo_azul.png"):
-    # Si existe la imagen, la usamos
+fondo = cargar_imagen_local("fondo_azul.png")
+if fondo:
     try:
-        with open("fondo_azul.png", "rb") as f:
+        with open(fondo, "rb") as f:
             encoded_bg = base64.b64encode(f.read()).decode()
         st.markdown(
             f"""
             <style>
             .stApp {{
-                background: url(data:image/png;base64,{encoded_bg});
+                background-image: url(data:image/png;base64,{encoded_bg});
                 background-size: cover;
                 background-attachment: fixed;
                 background-position: center;
-                position: relative; 
             }}
             </style>
             """,
             unsafe_allow_html=True
         )
-    except:
-        st.error("Error al leer 'fondo_azul.png'.")
+    except Exception as e:
+        st.error(f"Error cargando fondo: {e}")
 else:
-    # SI NO EXISTE: Usamos un color Azul Sólido (Plan B)
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background-color: #1E3A8A; /* Azul Prefectura */
-            position: relative;
-        }
-        </style>
-        """, 
-        unsafe_allow_html=True
-    )
-    st.warning("⚠️ No se encontró 'fondo_azul.png'. Se cargó el color azul de respaldo. Revisa el nombre del archivo en GitHub.")
+    # Si no encuentra la imagen, avisa pero MANTIENE EL AZUL del estilo base
+    st.warning("⚠️ No encontré 'fondo_azul.png'. Usando fondo azul sólido.")
 
 # B. LOGO ARRIBA
-if os.path.exists("logo_arriba.png"):
+logo_top = cargar_imagen_local("logo_arriba.png")
+if logo_top:
     c1, c2, c3 = st.columns([1, 4, 1])
     with c2:
-        st.image("logo_arriba.png", use_container_width=True)
+        st.image(logo_top, use_container_width=True)
 else:
-    st.warning("⚠️ Falta subir 'logo_arriba.png'.")
+    st.warning("⚠️ Falta 'logo_arriba.png'")
 
 # C. FIRMA ABAJO
-if os.path.exists("firma_abajo.png"):
-    with open("firma_abajo.png", "rb") as f:
-        encoded_img = base64.b64encode(f.read()).decode()
-    st.markdown(
-        f'<div class="firma-container"><img src="data:image/png;base64,{encoded_img}" width="100%"></div>',
-        unsafe_allow_html=True
-    )
+firma = cargar_imagen_local("firma_abajo.png")
+if firma:
+    try:
+        with open(firma, "rb") as f:
+            encoded_img = base64.b64encode(f.read()).decode()
+        st.markdown(
+            f'<div class="firma-container"><img src="data:image/png;base64,{encoded_img}" width="100%"></div>',
+            unsafe_allow_html=True
+        )
+    except:
+        pass
 
-# --- 4. LÓGICA DEL PROGRAMA (Igual que siempre) ---
+# --- 5. LÓGICA DEL GENERADOR ---
 
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
     x, y = xy
@@ -184,97 +188,100 @@ if st.session_state.paso == 1:
         
     st.session_state.foto = st.file_uploader("SUBE LA FOTO DEL EVENTO:", type=["jpg", "png", "jpeg"])
 
-    st.write("") 
+    st.write("")
     if st.button("GENERAR FLYER ➡️"):
         if st.session_state.foto:
             st.session_state.paso = 2
             st.rerun()
         else:
-            st.error("⚠️ Por favor, sube una foto para continuar.")
+            st.error("⚠️ Sube una foto primero.")
 
 # PASO 2: RESULTADO
 elif st.session_state.paso == 2:
-    st.success("¡Diseño generado con éxito!")
+    st.success("¡Diseño generado!")
     
-    with st.expander("🎨 Ajustes de Diseño (Opcional)"):
-        color_filtro = st.color_picker("Color Filtro", "#002200")
+    with st.expander("🎨 Ajustes"):
+        color_filtro = st.color_picker("Filtro", "#002200")
         opacidad_filtro = st.slider("Opacidad", 0, 255, 120)
-        color_tarjeta = st.color_picker("Color Tarjeta", "#2E7D32")
+        color_tarjeta = st.color_picker("Tarjeta", "#2E7D32")
 
+    # PROCESAMIENTO 4K
     canvas_w, canvas_h = 2160, 3840
-    imagen_usuario = Image.open(st.session_state.foto).convert("RGBA")
-    img = ImageOps.fit(imagen_usuario, (canvas_w, canvas_h), centering=(0.5, 0.5), method=Image.Resampling.LANCZOS)
-    
-    rgb_filtro = tuple(int(color_filtro.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    overlay = Image.new("RGBA", img.size, rgb_filtro + (opacidad_filtro,))
-    img = Image.alpha_composite(img, overlay)
-    capa = Image.new("RGBA", img.size, (0,0,0,0))
-    draw = ImageDraw.Draw(capa)
-    
     try:
-        f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 220)
-        f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 90)
-        f_info = ImageFont.truetype("Canaro-Medium.ttf", 75) 
-        f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", 55)
-    except:
-        f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
+        imagen_usuario = Image.open(st.session_state.foto).convert("RGBA")
+        img = ImageOps.fit(imagen_usuario, (canvas_w, canvas_h), centering=(0.5, 0.5), method=Image.Resampling.LANCZOS)
+        
+        rgb_filtro = tuple(int(color_filtro.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        overlay = Image.new("RGBA", img.size, rgb_filtro + (opacidad_filtro,))
+        img = Image.alpha_composite(img, overlay)
+        capa = Image.new("RGBA", img.size, (0,0,0,0))
+        draw = ImageDraw.Draw(capa)
+        
+        # FUENTES
+        try:
+            f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 220)
+            f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 90)
+            f_info = ImageFont.truetype("Canaro-Medium.ttf", 75) 
+            f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", 55)
+        except:
+            f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # LOGO PREFECTURA (Flyer)
-    h_logo_p = 700 
-    try:
-        logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
-        ratio = logo_pref.width / logo_pref.height
-        logo_pref = logo_pref.resize((int(h_logo_p * ratio), h_logo_p), Image.Resampling.LANCZOS)
-        x_logo_p = (canvas_w - logo_pref.width) // 2
-        img.paste(logo_pref, (x_logo_p, 50), logo_pref)
-    except: pass
+        # LOGO PREFECTURA (FLYER)
+        if os.path.exists("logo_prefectura.png"):
+            h_logo_p = 700 
+            logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
+            ratio = logo_pref.width / logo_pref.height
+            logo_pref = logo_pref.resize((int(h_logo_p * ratio), h_logo_p), Image.Resampling.LANCZOS)
+            x_logo_p = (canvas_w - logo_pref.width) // 2
+            img.paste(logo_pref, (x_logo_p, 50), logo_pref)
 
-    # TEXTOS
-    y_texto = 880 
-    bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
-    w_tit = bbox[2] - bbox[0]
-    dibujar_texto_sombra(draw, ((canvas_w - w_tit)/2, y_texto), st.session_state.titulo, f_titulo)
-    y_texto += 260 
-    lineas = textwrap.wrap(st.session_state.cuerpo, width=35) 
-    for linea in lineas:
-        bbox_l = draw.textbbox((0,0), linea, font=f_cuerpo)
-        w_l = bbox_l[2] - bbox_l[0]
-        dibujar_texto_sombra(draw, ((canvas_w - w_l)/2, y_texto), linea, f_cuerpo)
-        y_texto += 110
+        # TEXTOS
+        y_texto = 880 
+        bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
+        w_tit = bbox[2] - bbox[0]
+        dibujar_texto_sombra(draw, ((canvas_w - w_tit)/2, y_texto), st.session_state.titulo, f_titulo)
+        y_texto += 260 
+        lineas = textwrap.wrap(st.session_state.cuerpo, width=35) 
+        for linea in lineas:
+            bbox_l = draw.textbbox((0,0), linea, font=f_cuerpo)
+            w_l = bbox_l[2] - bbox_l[0]
+            dibujar_texto_sombra(draw, ((canvas_w - w_l)/2, y_texto), linea, f_cuerpo)
+            y_texto += 110
 
-    # TARJETA
-    w_card = 1200; h_card = 950; y_card = canvas_h - h_card - 750
-    margen_derecho_lienzo = 80; x_inicio_tarjeta = canvas_w - w_card - margen_derecho_lienzo
-    rgb_t = tuple(int(color_tarjeta.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    draw.rounded_rectangle([x_inicio_tarjeta, y_card, canvas_w - margen_derecho_lienzo, y_card + h_card], radius=60, fill=rgb_t + (230,))
-    
-    padding_x = 70; padding_y = 70
-    margin_x_texto = x_inicio_tarjeta + padding_x; current_y_texto = y_card + padding_y
-    max_text_width = w_card - (padding_x * 2)
+        # TARJETA
+        w_card = 1200; h_card = 950; y_card = canvas_h - h_card - 750
+        margen_derecho_lienzo = 80; x_inicio_tarjeta = canvas_w - w_card - margen_derecho_lienzo
+        rgb_t = tuple(int(color_tarjeta.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        draw.rounded_rectangle([x_inicio_tarjeta, y_card, canvas_w - margen_derecho_lienzo, y_card + h_card], radius=60, fill=rgb_t + (230,))
+        
+        padding_x = 70; padding_y = 70
+        margin_x_texto = x_inicio_tarjeta + padding_x; current_y_texto = y_card + padding_y
+        max_text_width = w_card - (padding_x * 2)
 
-    current_y_texto = dibujar_texto_ajustado(draw, "📍 " + st.session_state.lugar_nombre, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
-    current_y_texto = dibujar_texto_ajustado(draw, st.session_state.lugar_dir, f_info_peq, "white", margin_x_texto, current_y_texto, max_text_width)
-    current_y_texto += 40
-    current_y_texto = dibujar_texto_ajustado(draw, "🗓️ " + st.session_state.fecha, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
-    dibujar_texto_ajustado(draw, "🕒 " + st.session_state.hora, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
+        current_y_texto = dibujar_texto_ajustado(draw, "📍 " + st.session_state.lugar_nombre, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
+        current_y_texto = dibujar_texto_ajustado(draw, st.session_state.lugar_dir, f_info_peq, "white", margin_x_texto, current_y_texto, max_text_width)
+        current_y_texto += 40
+        current_y_texto = dibujar_texto_ajustado(draw, "🗓️ " + st.session_state.fecha, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
+        dibujar_texto_ajustado(draw, "🕒 " + st.session_state.hora, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
 
-    # LOGO VISIT
-    try:
-        logo_visit = Image.open("logo_visit.png").convert("RGBA")
-        h_visit = 1150
-        r_visit = logo_visit.width / logo_visit.height
-        logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit), Image.Resampling.LANCZOS)
-        img.paste(logo_visit, (0, canvas_h - h_visit), logo_visit)
-    except: pass
+        # LOGO VISIT
+        if os.path.exists("logo_visit.png"):
+            logo_visit = Image.open("logo_visit.png").convert("RGBA")
+            h_visit = 1150
+            r_visit = logo_visit.width / logo_visit.height
+            logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit), Image.Resampling.LANCZOS)
+            img.paste(logo_visit, (0, canvas_h - h_visit), logo_visit)
 
-    # MOSTRAR
-    img_final = Image.alpha_composite(img, capa).convert("RGB")
-    st.image(img_final, caption="Vista Previa", width=400)
-    
-    c1, c2 = st.columns(2)
-    with c1: 
-        if st.button("⬅️ VOLVER"): st.session_state.paso = 1; st.rerun()
-    with c2:
-        buf = io.BytesIO()
-        img_final.save(buf, format="PNG")
-        st.download_button("📥 DESCARGAR", data=buf.getvalue(), file_name="flyer_prefectura_4k.png", mime="image/png")
+        img_final = Image.alpha_composite(img, capa).convert("RGB")
+        st.image(img_final, caption="Vista Previa", width=400)
+        
+        c1, c2 = st.columns(2)
+        with c1: 
+            if st.button("⬅️ VOLVER"): st.session_state.paso = 1; st.rerun()
+        with c2:
+            buf = io.BytesIO()
+            img_final.save(buf, format="PNG")
+            st.download_button("📥 DESCARGAR", data=buf.getvalue(), file_name="flyer_prefectura_4k.png", mime="image/png")
+            
+    except Exception as e:
+        st.error(f"Error generando imagen: {e}")
