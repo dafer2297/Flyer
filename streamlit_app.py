@@ -59,7 +59,7 @@ def dibujar_texto_ajustado(draw, text, font, color, x_start, y_start, max_width,
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-st.title("💎 Generador 4K (Texto Ajustado en Tarjeta)")
+st.title("Prototipo - Generador de arte")
 
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
@@ -67,15 +67,15 @@ if st.session_state.paso == 1:
     st.info("ℹ️ El texto dentro de la tarjeta ahora se ajustará automáticamente si es muy largo.")
     
     st.session_state.titulo = st.text_area("TÍTULO PRINCIPAL:", "TE INVITA")
-    st.session_state.cuerpo = st.text_area("Descripción:", "Al evento de entrega de la membresía a la Red Mundial de Destinos Turísticos del Cacao.")
+    st.session_state.cuerpo = st.text_area("Descripción:", "Descripción del evento")
     
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.fecha = st.text_input("Fecha:", "Miércoles, 6 de Agosto")
-        st.session_state.hora = st.text_input("Hora:", "18:30")
+        st.session_state.fecha = st.text_input("Fecha:", "Colocar dia de la semana y despues la fecha")
+        st.session_state.hora = st.text_input("Hora:", "Colocar hora formato 24 horas")
     with col2:
-        st.session_state.lugar_nombre = st.text_input("Lugar (Nombre):", "Teatrina de la Casa de la Provincia del Azuay")
-        st.session_state.lugar_dir = st.text_input("Dirección:", "(Tomás Ordóñez 8-69 y Simón Bolívar esquina)")
+        st.session_state.lugar_nombre = st.text_input("Lugar (Nombre):", "Lugar del eventon")
+        st.session_state.lugar_dir = st.text_input("Dirección:", "Opcional")
         
     st.session_state.foto = st.file_uploader("Sube tu foto:", type=["jpg", "png", "jpeg"])
 
