@@ -4,12 +4,11 @@ import io
 import textwrap
 import base64
 
-# --- CONFIGURACIÓN DE PÁGINA Y COLORES ---
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="App Prefectura", layout="centered")
 
-# Función Mágica para poner tu fondo de Procreate
+# --- FUNCIÓN PARA PONER EL FONDO (CORREGIDA) ---
 def set_bg_hack(main_bg):
-    # Esto convierte tu imagen a un formato que el navegador entiende
     main_bg_ext = "png"
     st.markdown(
         f"""
@@ -20,16 +19,20 @@ def set_bg_hack(main_bg):
             background-position: center; 
             background-attachment: fixed;
         }}
-        /* Forzar textos a BLANCO para que se vean sobre el azul */
+        /* Mueve el contenido hacia abajo para no tapar el logo de la Prefectura del fondo */
+        .block-container {{
+            padding-top: 150px; 
+        }}
+        /* Forzar textos a BLANCO */
         .stMarkdown, .stText, h1, h2, h3, h4, p, label {{
             color: #FFFFFF !important;
         }}
-        /* Ajuste para que los inputs se vean bien */
+        /* Inputs limpios */
         .stTextInput>div>div>input {{
             color: #000000;
             background-color: #ffffff;
         }}
-        /* Botones estilo Prefectura (Magenta) */
+        /* Botones Magenta */
         div.stButton > button {{
             background-color: #D81B60;
             color: white;
@@ -38,16 +41,16 @@ def set_bg_hack(main_bg):
         }}
         </style>
         """,
-        unsafe_allow_status=True
+        unsafe_allow_html=True # <--- AQUÍ ESTABA EL ERROR, YA LO CORREGÍ
     )
 
-# Intentamos cargar el fondo. Si no está, no falla la app.
+# Cargamos el fondo
 try:
     set_bg_hack('fondo_app.png')
 except FileNotFoundError:
     st.warning("⚠️ Sube la imagen 'fondo_app.png' a GitHub para ver el fondo azul.")
 
-# --- LÓGICA DEL GENERADOR DE FLYERS (V7) ---
+# --- LÓGICA DEL GENERADOR ---
 
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
     x, y = xy
@@ -85,12 +88,12 @@ def dibujar_texto_ajustado(draw, text, font, color, x_start, y_start, max_width,
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-# Título transparente (para que se vea tu logo del fondo si quieres, o lo dejas)
-st.markdown("<h1 style='text-align: center; color: white;'>Generador de Flyers 4K</h1>", unsafe_allow_html=True)
-
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
-    st.info("ℹ️ Ingresa los datos para generar el flyer oficial.")
+    # Quitamos el título de texto para que luzca el logo de tu fondo
+    # st.title("Generador de Flyers") 
+    
+    st.info("ℹ️ Ingresa los datos del evento:")
     
     st.session_state.titulo = st.text_area("TÍTULO:", "TE INVITA")
     st.session_state.cuerpo = st.text_area("Descripción:", "Al evento de entrega de la membresía...")
@@ -116,13 +119,11 @@ if st.session_state.paso == 1:
 elif st.session_state.paso == 2:
     st.success("¡Diseño generado con éxito!")
     
-    # Ajustes rápidos
     with st.expander("🎨 Ajustes Avanzados"):
         color_filtro = st.color_picker("Color del Filtro", "#002200")
         opacidad_filtro = st.slider("Oscuridad del Fondo", 0, 255, 120)
         color_tarjeta = st.color_picker("Color Tarjeta", "#2E7D32")
 
-    # --- PROCESAMIENTO 4K ---
     canvas_w, canvas_h = 2160, 3840
     imagen_usuario = Image.open(st.session_state.foto).convert("RGBA")
     img = ImageOps.fit(imagen_usuario, (canvas_w, canvas_h), centering=(0.5, 0.5), method=Image.Resampling.LANCZOS)
