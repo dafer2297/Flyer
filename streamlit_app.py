@@ -49,7 +49,7 @@ def configurar_diseño():
                 position: fixed;
                 bottom: 20px;
                 left: 20px;
-                width: 150px;
+                width: 250px;
                 z-index: 999;
                 pointer-events: none; /* Para que no estorbe clicks */
             }}
