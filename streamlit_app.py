@@ -5,20 +5,19 @@ import textwrap
 import base64
 import os
 
-# --- 1. CONFIGURACIÓN INICIAL (OBLIGATORIO PRIMERO) ---
+# --- 1. CONFIGURACIÓN INICIAL ---
 st.set_page_config(page_title="Generador Oficial", layout="centered")
 
-# --- 2. FUNCIÓN DE CARGA SEGURA ---
+# --- 2. FUNCIÓN DE CARGA ---
 def cargar_imagen_local(nombre_archivo):
     if os.path.exists(nombre_archivo):
         return nombre_archivo
     return None
 
-# --- 3. ESTILOS CSS (DISEÑO) ---
-# Definimos el estilo base PRIMERO para que nunca se vea negro
+# --- 3. ESTILOS CSS (SOLO PARA DISEÑO, SIN POSICIONES RARAS) ---
 estilo_base = """
     <style>
-    /* Color de fondo de seguridad (Azul Prefectura) por si falla la imagen */
+    /* Color de seguridad */
     .stApp {
         background-color: #1E3A8A; 
     }
@@ -28,7 +27,7 @@ estilo_base = """
         color: #FFFFFF !important;
     }
     
-    /* Inputs (Cajas de texto) */
+    /* Inputs */
     .stTextInput>div>div>input {
         color: #000000;
         background-color: rgba(255, 255, 255, 0.95);
@@ -51,32 +50,13 @@ estilo_base = """
         width: 100%;
     }
     
-    /* Espaciado para que no se tape nada */
+    /* Espaciado */
     .block-container {
         padding-top: 20px !important;
-        padding-bottom: 250px !important;
+        padding-bottom: 100px !important;
     }
     
-    /* Firma Jota (Posición fija abajo) */
-    .firma-container {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        width: 250px; /* TAMAÑO GRANDE */
-        z-index: 1;
-        pointer-events: none;
-    }
-    
-    /* Ajuste Móvil */
-    @media (max-width: 640px) {
-        .firma-container {
-            width: 180px;
-            left: 10px;
-            bottom: 10px;
-        }
-    }
-    
-    /* Ocultar menú Streamlit */
+    /* Ocultar menú */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -105,13 +85,10 @@ if fondo:
             """,
             unsafe_allow_html=True
         )
-    except Exception as e:
-        st.error(f"Error cargando fondo: {e}")
-else:
-    # Si no encuentra la imagen, avisa pero MANTIENE EL AZUL del estilo base
-    st.warning("⚠️ No encontré 'fondo_azul.png'. Usando fondo azul sólido.")
+    except:
+        pass
 
-# B. LOGO ARRIBA
+# B. LOGO ARRIBA (Encabezado)
 logo_top = cargar_imagen_local("logo_arriba.png")
 if logo_top:
     c1, c2, c3 = st.columns([1, 4, 1])
@@ -120,18 +97,7 @@ if logo_top:
 else:
     st.warning("⚠️ Falta 'logo_arriba.png'")
 
-# C. FIRMA ABAJO
-firma = cargar_imagen_local("firma_abajo.png")
-if firma:
-    try:
-        with open(firma, "rb") as f:
-            encoded_img = base64.b64encode(f.read()).decode()
-        st.markdown(
-            f'<div class="firma-container"><img src="data:image/png;base64,{encoded_img}" width="100%"></div>',
-            unsafe_allow_html=True
-        )
-    except:
-        pass
+# (LA FIRMA YA NO SE CARGA AQUÍ, SE CARGA AL FINAL DEL FORMULARIO)
 
 # --- 5. LÓGICA DEL GENERADOR ---
 
@@ -188,13 +154,25 @@ if st.session_state.paso == 1:
         
     st.session_state.foto = st.file_uploader("SUBE LA FOTO DEL EVENTO:", type=["jpg", "png", "jpeg"])
 
-    st.write("")
+    st.write("") # Espacio
     if st.button("GENERAR FLYER ➡️"):
         if st.session_state.foto:
             st.session_state.paso = 2
             st.rerun()
         else:
             st.error("⚠️ Sube una foto primero.")
+    
+    # --- AQUÍ VA LA FIRMA AHORA (AL FINAL, SIN CHOCAR) ---
+    st.write("") 
+    st.write("") 
+    st.write("") # Espacios para separarla del botón
+    
+    firma = cargar_imagen_local("firma_abajo.png")
+    if firma:
+        # Usamos columnas para ponerla a la izquierda y controlar el tamaño
+        c_firma, c_vacio = st.columns([1, 2]) # 1 parte firma, 2 partes vacío
+        with c_firma:
+            st.image(firma, width=250) # Aquí controlas el tamaño exacto
 
 # PASO 2: RESULTADO
 elif st.session_state.paso == 2:
@@ -217,7 +195,6 @@ elif st.session_state.paso == 2:
         capa = Image.new("RGBA", img.size, (0,0,0,0))
         draw = ImageDraw.Draw(capa)
         
-        # FUENTES
         try:
             f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 220)
             f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 90)
