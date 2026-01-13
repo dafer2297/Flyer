@@ -2,30 +2,65 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
 import textwrap
+import base64
 
-st.set_page_config(page_title="Flyer 4K Final V7", layout="centered")
+# --- CONFIGURACIÓN DE PÁGINA Y COLORES ---
+st.set_page_config(page_title="App Prefectura", layout="centered")
 
-# --- FUNCIÓN AUXILIAR 1: Sombra ---
+# Función Mágica para poner tu fondo de Procreate
+def set_bg_hack(main_bg):
+    # Esto convierte tu imagen a un formato que el navegador entiende
+    main_bg_ext = "png"
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background: url(data:image/{main_bg_ext};base64,{base64.b64encode(open(main_bg, "rb").read()).decode()});
+            background-size: cover;
+            background-position: center; 
+            background-attachment: fixed;
+        }}
+        /* Forzar textos a BLANCO para que se vean sobre el azul */
+        .stMarkdown, .stText, h1, h2, h3, h4, p, label {{
+            color: #FFFFFF !important;
+        }}
+        /* Ajuste para que los inputs se vean bien */
+        .stTextInput>div>div>input {{
+            color: #000000;
+            background-color: #ffffff;
+        }}
+        /* Botones estilo Prefectura (Magenta) */
+        div.stButton > button {{
+            background-color: #D81B60;
+            color: white;
+            border: none;
+            font-weight: bold;
+        }}
+        </style>
+        """,
+        unsafe_allow_status=True
+    )
+
+# Intentamos cargar el fondo. Si no está, no falla la app.
+try:
+    set_bg_hack('fondo_app.png')
+except FileNotFoundError:
+    st.warning("⚠️ Sube la imagen 'fondo_app.png' a GitHub para ver el fondo azul.")
+
+# --- LÓGICA DEL GENERADOR DE FLYERS (V7) ---
+
 def dibujar_texto_sombra(draw, xy, texto, fuente, color="white", sombra="black"):
     x, y = xy
     draw.text((x+8, y+8), texto, font=fuente, fill=sombra)
     draw.text((x, y), texto, font=fuente, fill=color)
 
-# --- FUNCIÓN AUXILIAR 2: AJUSTE AUTOMÁTICO DE TEXTO ---
-# Esta es la clave para que no se salga del recuadro.
-# Mide el texto y si es muy largo, lo baja a la siguiente línea.
 def dibujar_texto_ajustado(draw, text, font, color, x_start, y_start, max_width, line_spacing=1.1):
     if not text: return y_start
-    
     words = text.split()
     lines = []
     current_line = []
-    
-    # Obtener altura de la fuente
     bbox_font = font.getbbox("Ay")
     font_height = bbox_font[3] - bbox_font[1]
-
-    # Lógica para dividir en líneas según el ancho disponible
     current_w = 0
     for word in words:
         word_w = font.getlength(word + " ")
@@ -37,65 +72,57 @@ def dibujar_texto_ajustado(draw, text, font, color, x_start, y_start, max_width,
             current_line = [word]
             current_w = font.getlength(word)
     if current_line: lines.append(" ".join(current_line))
-
-    # Dibujar las líneas calculadas
     current_y = y_start
     for i, line in enumerate(lines):
-        # Si es la primera línea, añade el icono (si existe)
         prefix = ""
         if i == 0 and "📍" in text: prefix = "📍 "
         elif i == 0 and "🗓️" in text: prefix = "🗓️ "
         elif i == 0 and "🕒" in text: prefix = "🕒 "
-        
-        # Limpiamos el texto de iconos para dibujarlo bien
         clean_line = line.replace("📍 ", "").replace("🗓️ ", "").replace("🕒 ", "")
-        
-        # Dibujar
         draw.text((x_start, current_y), prefix + clean_line, font=font, fill=color)
         current_y += font_height * line_spacing
-        
-    # Devolver la nueva posición Y para el siguiente bloque
-    return current_y + (font_height * 0.5) # Un pequeño espacio extra al final
+    return current_y + (font_height * 0.5)
 
 if 'paso' not in st.session_state: st.session_state.paso = 1
 
-st.title("Prototipo - Generador de arte")
+# Título transparente (para que se vea tu logo del fondo si quieres, o lo dejas)
+st.markdown("<h1 style='text-align: center; color: white;'>Generador de Flyers 4K</h1>", unsafe_allow_html=True)
 
 # ==================== PASO 1: DATOS ====================
 if st.session_state.paso == 1:
-    st.header("1. Ingresa los datos")
-    st.info("ℹ️ El texto dentro de la tarjeta ahora se ajustará automáticamente si es muy largo.")
+    st.info("ℹ️ Ingresa los datos para generar el flyer oficial.")
     
-    st.session_state.titulo = st.text_area("TÍTULO PRINCIPAL:", "TE INVITA")
-    st.session_state.cuerpo = st.text_area("Descripción:", "Descripción del evento")
+    st.session_state.titulo = st.text_area("TÍTULO:", "TE INVITA")
+    st.session_state.cuerpo = st.text_area("Descripción:", "Al evento de entrega de la membresía...")
     
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.fecha = st.text_input("Fecha:", "Colocar dia de la semana y despues la fecha")
-        st.session_state.hora = st.text_input("Hora:", "Colocar hora formato 24 horas")
+        st.session_state.fecha = st.text_input("Fecha:", "Miércoles, 6 de Agosto")
+        st.session_state.hora = st.text_input("Hora:", "18:30")
     with col2:
-        st.session_state.lugar_nombre = st.text_input("Lugar (Nombre):", "Lugar del eventon")
-        st.session_state.lugar_dir = st.text_input("Dirección:", "Opcional")
+        st.session_state.lugar_nombre = st.text_input("Lugar:", "Teatrina de la Casa de la Provincia")
+        st.session_state.lugar_dir = st.text_input("Dirección:", "(Tomás Ordóñez 8-69)")
         
     st.session_state.foto = st.file_uploader("Sube tu foto:", type=["jpg", "png", "jpeg"])
 
-    if st.button("Diseñar Flyer ➡️", type="primary"):
+    if st.button("Crear Flyer ➡️"):
         if st.session_state.foto:
             st.session_state.paso = 2
             st.rerun()
         else:
-            st.error("⚠️ Sube una foto primero.")
+            st.error("⚠️ Por favor sube una foto.")
 
-# ==================== PASO 2: DISEÑO ====================
+# ==================== PASO 2: RESULTADO ====================
 elif st.session_state.paso == 2:
-    st.header("2. Resultado Final")
+    st.success("¡Diseño generado con éxito!")
     
-    st.sidebar.header("🎨 Ajustes")
-    color_filtro = st.sidebar.color_picker("Color del Filtro", "#002200")
-    opacidad_filtro = st.sidebar.slider("Oscuridad del Fondo", 0, 255, 120)
-    color_tarjeta = st.sidebar.color_picker("Color Tarjeta", "#2E7D32")
+    # Ajustes rápidos
+    with st.expander("🎨 Ajustes Avanzados"):
+        color_filtro = st.color_picker("Color del Filtro", "#002200")
+        opacidad_filtro = st.slider("Oscuridad del Fondo", 0, 255, 120)
+        color_tarjeta = st.color_picker("Color Tarjeta", "#2E7D32")
 
-    # 1. LIENZO 4K
+    # --- PROCESAMIENTO 4K ---
     canvas_w, canvas_h = 2160, 3840
     imagen_usuario = Image.open(st.session_state.foto).convert("RGBA")
     img = ImageOps.fit(imagen_usuario, (canvas_w, canvas_h), centering=(0.5, 0.5), method=Image.Resampling.LANCZOS)
@@ -106,17 +133,15 @@ elif st.session_state.paso == 2:
     capa = Image.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(capa)
     
-    # 2. FUENTES 4K
     try:
         f_titulo = ImageFont.truetype("Canaro-ExtraBold.ttf", 220)
         f_cuerpo = ImageFont.truetype("Canaro-Medium.ttf", 90)
         f_info = ImageFont.truetype("Canaro-Medium.ttf", 75) 
         f_info_peq = ImageFont.truetype("Canaro-Medium.ttf", 55)
     except:
-        st.error("⚠️ Fuentes no encontradas.")
         f_titulo = f_cuerpo = f_info = f_info_peq = ImageFont.load_default()
 
-    # 3. LOGO PREFECTURA
+    # Logo Prefectura
     h_logo_p = 700 
     try:
         logo_pref = Image.open("logo_prefectura.png").convert("RGBA")
@@ -126,7 +151,7 @@ elif st.session_state.paso == 2:
         img.paste(logo_pref, (x_logo_p, 50), logo_pref)
     except: pass
 
-    # 4. TEXTOS PRINCIPALES
+    # Textos
     y_texto = 880 
     bbox = draw.textbbox((0,0), st.session_state.titulo, font=f_titulo)
     w_tit = bbox[2] - bbox[0]
@@ -139,59 +164,39 @@ elif st.session_state.paso == 2:
         dibujar_texto_sombra(draw, ((canvas_w - w_l)/2, y_texto), linea, f_cuerpo)
         y_texto += 110
 
-    # 5. TARJETA INFO (CON AJUSTE AUTOMÁTICO DE TEXTO)
-    w_card = 1200
-    h_card = 950
-    y_card = canvas_h - h_card - 750
-    margen_derecho_lienzo = 80
-    x_inicio_tarjeta = canvas_w - w_card - margen_derecho_lienzo
-    
+    # Tarjeta Info
+    w_card = 1200; h_card = 950; y_card = canvas_h - h_card - 750
+    margen_derecho_lienzo = 80; x_inicio_tarjeta = canvas_w - w_card - margen_derecho_lienzo
     rgb_t = tuple(int(color_tarjeta.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-    draw.rounded_rectangle(
-        [x_inicio_tarjeta, y_card, canvas_w - margen_derecho_lienzo, y_card + h_card], 
-        radius=60, fill=rgb_t + (230,)
-    )
+    draw.rounded_rectangle([x_inicio_tarjeta, y_card, canvas_w - margen_derecho_lienzo, y_card + h_card], radius=60, fill=rgb_t + (230,))
     
-    # Definir márgenes internos y ancho máximo para el texto
-    padding_x = 70
-    padding_y = 70
-    margin_x_texto = x_inicio_tarjeta + padding_x
-    current_y_texto = y_card + padding_y
-    # El ancho máximo permitido para el texto es el ancho de la tarjeta menos los márgenes internos
+    padding_x = 70; padding_y = 70
+    margin_x_texto = x_inicio_tarjeta + padding_x; current_y_texto = y_card + padding_y
     max_text_width = w_card - (padding_x * 2)
 
-    # --- DIBUJAR TEXTOS USANDO LA NUEVA FUNCIÓN ---
-    # La función devuelve la nueva posición Y donde debe empezar el siguiente bloque
-    
-    # Bloque Lugar
     current_y_texto = dibujar_texto_ajustado(draw, "📍 " + st.session_state.lugar_nombre, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
-    # Bloque Dirección
     current_y_texto = dibujar_texto_ajustado(draw, st.session_state.lugar_dir, f_info_peq, "white", margin_x_texto, current_y_texto, max_text_width)
-    
-    # Añadimos un poco de espacio extra antes de la fecha
     current_y_texto += 40
-    
-    # Bloque Fecha
     current_y_texto = dibujar_texto_ajustado(draw, "🗓️ " + st.session_state.fecha, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
-    # Bloque Hora
     dibujar_texto_ajustado(draw, "🕒 " + st.session_state.hora, f_info, "white", margin_x_texto, current_y_texto, max_text_width)
 
-    # 6. LOGO VISIT AZUAY
-    h_visit = 1150 
+    # Logo Visit
     try:
         logo_visit = Image.open("logo_visit.png").convert("RGBA")
+        h_visit = 1150
         r_visit = logo_visit.width / logo_visit.height
         logo_visit = logo_visit.resize((int(h_visit * r_visit), h_visit), Image.Resampling.LANCZOS)
         img.paste(logo_visit, (0, canvas_h - h_visit), logo_visit)
     except: pass
 
-    # --- FINALIZAR ---
+    # Mostrar
     img_final = Image.alpha_composite(img, capa).convert("RGB")
     st.image(img_final, caption="Vista Previa", width=400)
+    
     c1, c2 = st.columns(2)
     with c1: 
-        if st.button("⬅️ Editar", type="secondary"): st.session_state.paso = 1; st.rerun()
+        if st.button("⬅️ Editar Datos"): st.session_state.paso = 1; st.rerun()
     with c2:
         buf = io.BytesIO()
         img_final.save(buf, format="PNG")
-        st.download_button("📥 DESCARGAR 4K (PNG)", data=buf.getvalue(), file_name="flyer_prefectura_4k.png", mime="image/png", type="primary")
+        st.download_button("📥 DESCARGAR 4K (PNG)", data=buf.getvalue(), file_name="flyer_prefectura_4k.png", mime="image/png")
